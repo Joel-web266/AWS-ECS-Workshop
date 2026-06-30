@@ -3,6 +3,7 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
+from botocore.exceptions import ClientError
 
 from src.utils.health_check import HealthChecker
 
@@ -145,12 +146,21 @@ class TestCheckECSService:
         assert result["healthy"] is False
         assert "error" in result
 
-    def test_service_check_exception(self, checker):
+    def test_service_check_client_error(self, checker):
         mock_client = MagicMock()
-        mock_client.describe_services.side_effect = Exception("API error")
+        mock_client.describe_services.side_effect = ClientError(
+            {"Error": {"Code": "ClusterNotFoundException", "Message": "not found"}},
+            "DescribeServices",
+        )
         result = checker.check_ecs_service(mock_client, "cluster", "svc")
         assert result["healthy"] is False
         assert "error" in result
+
+    def test_service_check_unexpected_error_propagates(self, checker):
+        mock_client = MagicMock()
+        mock_client.describe_services.side_effect = TypeError("unexpected")
+        with pytest.raises(RuntimeError, match="Unexpected response from ECS API"):
+            checker.check_ecs_service(mock_client, "cluster", "svc")
 
 
 class TestBuildHealthCheckConfig:

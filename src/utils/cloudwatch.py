@@ -31,14 +31,21 @@ class CloudWatchManager:
             if tags:
                 params["tags"] = tags
             self.logs_client.create_log_group(**params)
+        except ClientError as e:
+            if e.response["Error"]["Code"] != "ResourceAlreadyExistsException":
+                raise RuntimeError(
+                    f"Failed to create log group '{log_group_name}': {e}"
+                ) from e
+
+        try:
             self.logs_client.put_retention_policy(
                 logGroupName=log_group_name, retentionInDays=retention_days
             )
-            return True
         except ClientError as e:
-            if e.response["Error"]["Code"] == "ResourceAlreadyExistsException":
-                return True
-            raise RuntimeError(f"Failed to create log group '{log_group_name}': {e}") from e
+            raise RuntimeError(
+                f"Failed to set retention policy on log group '{log_group_name}': {e}"
+            ) from e
+        return True
 
     def delete_log_group(self, log_group_name):
         try:

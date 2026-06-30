@@ -43,11 +43,11 @@ class HealthChecker:
 
         last_error = None
         for attempt in range(self.retries):
+            sock = None
             try:
                 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 sock.settimeout(self.timeout)
                 result = sock.connect_ex((host, port))
-                sock.close()
                 if result == 0:
                     return {
                         "healthy": True,
@@ -58,6 +58,9 @@ class HealthChecker:
                 last_error = f"Connection refused (code: {result})"
             except (socket.error, OSError) as e:
                 last_error = str(e)
+            finally:
+                if sock is not None:
+                    sock.close()
 
             if attempt < self.retries - 1:
                 time.sleep(self.retry_delay)

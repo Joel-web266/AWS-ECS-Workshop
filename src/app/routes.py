@@ -62,6 +62,10 @@ def validate_config():
     for field_name in required_fields:
         if field_name not in data:
             errors.append(f"Missing required field: {field_name}")
+        elif not isinstance(data[field_name], str):
+            errors.append(f"Field '{field_name}' must be a string")
+        elif not data[field_name].strip():
+            errors.append(f"Field '{field_name}' must not be empty")
 
     if errors:
         return jsonify({"valid": False, "errors": errors}), 400

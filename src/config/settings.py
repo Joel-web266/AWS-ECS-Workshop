@@ -3,6 +3,17 @@
 import os
 
 
+def _parse_int_env(name: str, default: str) -> int:
+    """Parse an integer from an environment variable with a descriptive error on failure."""
+    raw = os.environ.get(name, default)
+    try:
+        return int(raw)
+    except (ValueError, TypeError) as e:
+        raise ValueError(
+            f"Environment variable '{name}' must be a valid integer, got '{raw}'"
+        ) from e
+
+
 class Settings:
     APP_NAME = "AWS ECS Workshop"
     APP_VERSION = "0.1.0"
@@ -12,20 +23,20 @@ class Settings:
     ECS_CLUSTER_NAME = os.environ.get("ECS_CLUSTER_NAME", "ecs-workshop-cluster")
     ECR_REPO_NAME = os.environ.get("ECR_REPO_NAME", "ecs-workshop-app")
 
-    CONTAINER_PORT = int(os.environ.get("CONTAINER_PORT", "5000"))
-    CONTAINER_CPU = int(os.environ.get("CONTAINER_CPU", "256"))
-    CONTAINER_MEMORY = int(os.environ.get("CONTAINER_MEMORY", "512"))
+    CONTAINER_PORT = _parse_int_env("CONTAINER_PORT", "5000")
+    CONTAINER_CPU = _parse_int_env("CONTAINER_CPU", "256")
+    CONTAINER_MEMORY = _parse_int_env("CONTAINER_MEMORY", "512")
 
     LOG_GROUP_NAME = os.environ.get("LOG_GROUP_NAME", "/ecs/workshop")
-    LOG_RETENTION_DAYS = int(os.environ.get("LOG_RETENTION_DAYS", "30"))
+    LOG_RETENTION_DAYS = _parse_int_env("LOG_RETENTION_DAYS", "30")
 
     HEALTH_CHECK_PATH = os.environ.get("HEALTH_CHECK_PATH", "/health")
-    HEALTH_CHECK_INTERVAL = int(os.environ.get("HEALTH_CHECK_INTERVAL", "30"))
-    HEALTH_CHECK_TIMEOUT = int(os.environ.get("HEALTH_CHECK_TIMEOUT", "5"))
+    HEALTH_CHECK_INTERVAL = _parse_int_env("HEALTH_CHECK_INTERVAL", "30")
+    HEALTH_CHECK_TIMEOUT = _parse_int_env("HEALTH_CHECK_TIMEOUT", "5")
 
-    DESIRED_COUNT = int(os.environ.get("DESIRED_COUNT", "2"))
-    MAX_CAPACITY = int(os.environ.get("MAX_CAPACITY", "10"))
-    MIN_CAPACITY = int(os.environ.get("MIN_CAPACITY", "1"))
+    DESIRED_COUNT = _parse_int_env("DESIRED_COUNT", "2")
+    MAX_CAPACITY = _parse_int_env("MAX_CAPACITY", "10")
+    MIN_CAPACITY = _parse_int_env("MIN_CAPACITY", "1")
 
     @classmethod
     def get_ecs_config(cls):

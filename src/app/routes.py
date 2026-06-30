@@ -50,7 +50,10 @@ def get_task(task_id):
 
 @api.route("/api/v1/validate", methods=["POST"])
 def validate_config():
-    data = request.get_json()
+    if not request.is_json:
+        return jsonify({"error": "Content-Type must be application/json"}), 415
+
+    data = request.get_json(silent=False)
     if not data:
         return jsonify({"error": "Request body is required"}), 400
 

@@ -1,8 +1,11 @@
 """Service health checking utilities."""
 
+import logging
 import time
 from urllib.error import URLError
 from urllib.request import urlopen
+
+logger = logging.getLogger(__name__)
 
 
 class HealthChecker:
@@ -68,6 +71,8 @@ class HealthChecker:
         }
 
     def check_ecs_service(self, ecs_client, cluster, service_name):
+        from botocore.exceptions import ClientError
+
         try:
             response = ecs_client.describe_services(
                 cluster=cluster, services=[service_name]
@@ -88,8 +93,16 @@ class HealthChecker:
                 "desired_count": desired,
                 "deployments": len(service.get("deployments", [])),
             }
-        except Exception as e:
+        except ClientError as e:
+            logger.error("AWS API error checking service '%s': %s", service_name, e)
             return {"healthy": False, "error": str(e)}
+        except (KeyError, TypeError) as e:
+            logger.error(
+                "Unexpected response structure checking service '%s': %s", service_name, e
+            )
+            raise RuntimeError(
+                f"Unexpected response from ECS API for service '{service_name}': {e}"
+            ) from e
 
     @staticmethod
     def build_health_check_config(

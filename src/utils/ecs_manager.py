@@ -39,6 +39,15 @@ class ECSManager:
     def describe_cluster(self, cluster_name):
         try:
             response = self.client.describe_clusters(clusters=[cluster_name])
+            failures = response.get("failures", [])
+            if failures:
+                reasons = "; ".join(
+                    f"{f.get('arn', 'unknown')}: {f.get('reason', 'unknown')}"
+                    for f in failures
+                )
+                raise RuntimeError(
+                    f"Failed to describe cluster '{cluster_name}': {reasons}"
+                )
             clusters = response.get("clusters", [])
             if not clusters:
                 return None
@@ -107,6 +116,15 @@ class ECSManager:
             response = self.client.describe_services(
                 cluster=cluster, services=[service_name]
             )
+            failures = response.get("failures", [])
+            if failures:
+                reasons = "; ".join(
+                    f"{f.get('arn', 'unknown')}: {f.get('reason', 'unknown')}"
+                    for f in failures
+                )
+                raise RuntimeError(
+                    f"Failed to describe service '{service_name}': {reasons}"
+                )
             services = response.get("services", [])
             if not services:
                 return None

@@ -1,6 +1,8 @@
 """ECR repository management utilities."""
 
 import base64
+import binascii
+import json
 import re
 
 import boto3
@@ -73,21 +75,34 @@ class ECRManager:
             response = self.client.get_authorization_token()
             auth_data = response["authorizationData"][0]
             token = base64.b64decode(auth_data["authorizationToken"]).decode("utf-8")
-            username, password = token.split(":")
+            parts = token.split(":", 1)
+            if len(parts) != 2:
+                raise RuntimeError(
+                    "Failed to get login token: malformed authorization token"
+                )
+            username, password = parts
             endpoint = auth_data["proxyEndpoint"]
             return {"username": username, "password": password, "endpoint": endpoint}
-        except (ClientError, KeyError, IndexError) as e:
+        except (ClientError, KeyError, IndexError, binascii.Error, UnicodeDecodeError) as e:
             raise RuntimeError(f"Failed to get login token: {e}") from e
 
     def set_lifecycle_policy(self, repo_name, max_image_count=100):
-        policy = (
-            '{"rules":[{"rulePriority":1,"description":"Keep last '
-            + str(max_image_count)
-            + ' images","selection":{"tagStatus":"any","countType":"imageCountMoreThan",'
-            + '"countNumber":'
-            + str(max_image_count)
-            + '},"action":{"type":"expire"}}]}'
-        )
+        if not isinstance(max_image_count, int) or max_image_count < 1:
+            raise ValueError(
+                f"max_image_count must be a positive integer, got {max_image_count!r}"
+            )
+        policy = json.dumps({
+            "rules": [{
+                "rulePriority": 1,
+                "description": f"Keep last {max_image_count} images",
+                "selection": {
+                    "tagStatus": "any",
+                    "countType": "imageCountMoreThan",
+                    "countNumber": max_image_count,
+                },
+                "action": {"type": "expire"},
+            }]
+        })
         try:
             self.client.put_lifecycle_policy(
                 repositoryName=repo_name, lifecyclePolicyText=policy

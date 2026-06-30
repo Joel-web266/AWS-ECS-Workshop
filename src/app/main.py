@@ -1,6 +1,8 @@
 """Application entry point for the ECS Workshop."""
 
 import logging
+import os
+import secrets
 
 from flask import Flask, jsonify
 from werkzeug.exceptions import HTTPException
@@ -12,6 +14,8 @@ logger = logging.getLogger(__name__)
 
 def create_app(config=None):
     app = Flask(__name__)
+
+    app.config["SECRET_KEY"] = os.environ.get("FLASK_SECRET_KEY", secrets.token_hex(32))
 
     if config:
         app.config.update(config)
@@ -44,4 +48,8 @@ def _register_error_handlers(app):
 
 if __name__ == "__main__":
     application = create_app()
-    application.run(host="0.0.0.0", port=5000, debug=True)
+    application.run(
+        host=os.environ.get("FLASK_HOST", "127.0.0.1"),
+        port=int(os.environ.get("FLASK_PORT", "5000")),
+        debug=os.environ.get("FLASK_DEBUG", "false").lower() == "true",
+    )

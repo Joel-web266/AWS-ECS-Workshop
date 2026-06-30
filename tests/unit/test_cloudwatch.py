@@ -1,17 +1,9 @@
 """Tests for CloudWatch manager utilities."""
 
-from unittest.mock import MagicMock
-
 import pytest
 from botocore.exceptions import ClientError
 
 from src.utils.cloudwatch import CloudWatchManager
-
-
-@pytest.fixture
-def mock_session():
-    session = MagicMock()
-    return session
 
 
 @pytest.fixture

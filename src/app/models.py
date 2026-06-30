@@ -4,6 +4,8 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
 
+from src.utils.converters import dict_to_env_vars
+
 
 class TaskStatus(Enum):
     PENDING = "PENDING"
@@ -49,7 +51,7 @@ class ContainerDefinition:
             "cpu": self.cpu,
             "memory": self.memory,
             "portMappings": [{"containerPort": self.port, "protocol": "tcp"}],
-            "environment": [{"name": k, "value": v} for k, v in self.environment.items()],
+            "environment": dict_to_env_vars(self.environment),
             "essential": self.essential,
         }
 

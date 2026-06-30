@@ -4,6 +4,17 @@ from flask import Blueprint, jsonify, request
 
 api = Blueprint("api", __name__)
 
+WORKSHOP_TASKS = [
+    {"id": 1, "name": "Build Docker Image", "module": 1, "completed": False},
+    {"id": 2, "name": "Push to ECR", "module": 2, "completed": False},
+    {"id": 3, "name": "Create ECS Cluster", "module": 3, "completed": False},
+    {"id": 4, "name": "Deploy Service", "module": 4, "completed": False},
+    {"id": 5, "name": "Configure Monitoring", "module": 5, "completed": False},
+    {"id": 6, "name": "Set Up Health Checks", "module": 6, "completed": False},
+]
+
+_TASKS_BY_ID = {t["id"]: t for t in WORKSHOP_TASKS}
+
 
 @api.route("/health", methods=["GET"])
 def health_check():
@@ -21,28 +32,12 @@ def get_info():
 
 @api.route("/api/v1/tasks", methods=["GET"])
 def list_tasks():
-    tasks = [
-        {"id": 1, "name": "Build Docker Image", "module": 1, "completed": False},
-        {"id": 2, "name": "Push to ECR", "module": 2, "completed": False},
-        {"id": 3, "name": "Create ECS Cluster", "module": 3, "completed": False},
-        {"id": 4, "name": "Deploy Service", "module": 4, "completed": False},
-        {"id": 5, "name": "Configure Monitoring", "module": 5, "completed": False},
-        {"id": 6, "name": "Set Up Health Checks", "module": 6, "completed": False},
-    ]
-    return jsonify({"tasks": tasks, "total": len(tasks)})
+    return jsonify({"tasks": WORKSHOP_TASKS, "total": len(WORKSHOP_TASKS)})
 
 
 @api.route("/api/v1/tasks/<int:task_id>", methods=["GET"])
 def get_task(task_id):
-    tasks = {
-        1: {"id": 1, "name": "Build Docker Image", "module": 1, "completed": False},
-        2: {"id": 2, "name": "Push to ECR", "module": 2, "completed": False},
-        3: {"id": 3, "name": "Create ECS Cluster", "module": 3, "completed": False},
-        4: {"id": 4, "name": "Deploy Service", "module": 4, "completed": False},
-        5: {"id": 5, "name": "Configure Monitoring", "module": 5, "completed": False},
-        6: {"id": 6, "name": "Set Up Health Checks", "module": 6, "completed": False},
-    }
-    task = tasks.get(task_id)
+    task = _TASKS_BY_ID.get(task_id)
     if task is None:
         return jsonify({"error": "Task not found"}), 404
     return jsonify(task)

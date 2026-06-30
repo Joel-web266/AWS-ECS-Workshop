@@ -1,17 +1,9 @@
 """Tests for ECR manager utilities."""
 
-from unittest.mock import MagicMock
-
 import pytest
 from botocore.exceptions import ClientError
 
 from src.utils.ecr_manager import ECRManager
-
-
-@pytest.fixture
-def mock_session():
-    session = MagicMock()
-    return session
 
 
 @pytest.fixture

@@ -1,7 +1,6 @@
 """Tests for task definition builder and manager."""
 
 import json
-from unittest.mock import MagicMock
 
 import pytest
 from botocore.exceptions import ClientError
@@ -154,11 +153,6 @@ class TestTaskDefinitionBuilder:
         assert "taskRoleArn" not in result
         assert "volumes" not in result
         assert "tags" not in result
-
-
-@pytest.fixture
-def mock_session():
-    return MagicMock()
 
 
 @pytest.fixture

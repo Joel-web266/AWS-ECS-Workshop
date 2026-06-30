@@ -3,8 +3,8 @@
 import copy
 import json
 
-import boto3
-from botocore.exceptions import ClientError
+from src.utils.aws_base import AWSBaseManager, aws_api_call
+from src.utils.converters import dict_to_env_vars, dict_to_tags
 
 
 class TaskDefinitionBuilder:
@@ -36,9 +36,7 @@ class TaskDefinitionBuilder:
                 {"containerPort": port, "protocol": "tcp"}
             ]
         if environment:
-            container["environment"] = [
-                {"name": k, "value": str(v)} for k, v in environment.items()
-            ]
+            container["environment"] = dict_to_env_vars(environment)
         if command:
             container["command"] = command if isinstance(command, list) else [command]
         if log_config:
@@ -134,54 +132,42 @@ class TaskDefinitionBuilder:
         if self.volumes:
             task_def["volumes"] = copy.deepcopy(self.volumes)
         if self.tags:
-            task_def["tags"] = [{"key": k, "value": v} for k, v in self.tags.items()]
+            task_def["tags"] = dict_to_tags(self.tags)
         return task_def
 
     def to_json(self, indent=2):
         return json.dumps(self.build(), indent=indent)
 
 
-class TaskDefinitionManager:
-    def __init__(self, region="us-east-1", session=None):
-        if session:
-            self.client = session.client("ecs", region_name=region)
-        else:
-            self.client = boto3.client("ecs", region_name=region)
+class TaskDefinitionManager(AWSBaseManager):
+    _service_name = "ecs"
 
+    @aws_api_call("register task definition")
     def register(self, task_definition):
-        try:
-            response = self.client.register_task_definition(**task_definition)
-            return response["taskDefinition"]
-        except ClientError as e:
-            raise RuntimeError(f"Failed to register task definition: {e}") from e
+        response = self.client.register_task_definition(**task_definition)
+        return response["taskDefinition"]
 
+    @aws_api_call("deregister task definition")
     def deregister(self, task_definition_arn):
-        try:
-            response = self.client.deregister_task_definition(
-                taskDefinition=task_definition_arn
-            )
-            return response["taskDefinition"]
-        except ClientError as e:
-            raise RuntimeError(f"Failed to deregister task definition: {e}") from e
+        response = self.client.deregister_task_definition(
+            taskDefinition=task_definition_arn
+        )
+        return response["taskDefinition"]
 
+    @aws_api_call("describe task definition")
     def describe(self, task_definition):
-        try:
-            response = self.client.describe_task_definition(
-                taskDefinition=task_definition
-            )
-            return response["taskDefinition"]
-        except ClientError as e:
-            raise RuntimeError(f"Failed to describe task definition: {e}") from e
+        response = self.client.describe_task_definition(
+            taskDefinition=task_definition
+        )
+        return response["taskDefinition"]
 
+    @aws_api_call("list task definitions")
     def list_task_definitions(self, family_prefix=None, status="ACTIVE"):
-        try:
-            params = {"status": status}
-            if family_prefix:
-                params["familyPrefix"] = family_prefix
-            response = self.client.list_task_definitions(**params)
-            return response.get("taskDefinitionArns", [])
-        except ClientError as e:
-            raise RuntimeError(f"Failed to list task definitions: {e}") from e
+        params = {"status": status}
+        if family_prefix:
+            params["familyPrefix"] = family_prefix
+        response = self.client.list_task_definitions(**params)
+        return response.get("taskDefinitionArns", [])
 
     def get_latest_revision(self, family):
         definitions = self.list_task_definitions(family_prefix=family)

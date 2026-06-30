@@ -5,8 +5,17 @@ from datetime import datetime, timezone
 import boto3
 from botocore.exceptions import ClientError
 
+from src.utils.converters import dict_to_dimensions
+
 
 class CloudWatchManager:
+    """Manager for CloudWatch Logs and Metrics.
+
+    Unlike other managers this creates two AWS clients (logs + cloudwatch),
+    so it does not inherit from ``AWSBaseManager``.  Error handling still
+    follows the shared ``RuntimeError`` convention.
+    """
+
     def __init__(self, region="us-east-1", session=None):
         if session:
             self.logs_client = session.client("logs", region_name=region)
@@ -103,9 +112,7 @@ class CloudWatchManager:
             "Timestamp": datetime.now(timezone.utc),
         }
         if dimensions:
-            metric_data["Dimensions"] = [
-                {"Name": k, "Value": v} for k, v in dimensions.items()
-            ]
+            metric_data["Dimensions"] = dict_to_dimensions(dimensions)
         try:
             self.cw_client.put_metric_data(
                 Namespace=namespace, MetricData=[metric_data]
@@ -141,9 +148,7 @@ class CloudWatchManager:
         if actions:
             params["AlarmActions"] = actions
         if dimensions:
-            params["Dimensions"] = [
-                {"Name": k, "Value": v} for k, v in dimensions.items()
-            ]
+            params["Dimensions"] = dict_to_dimensions(dimensions)
         try:
             self.cw_client.put_metric_alarm(**params)
             return True

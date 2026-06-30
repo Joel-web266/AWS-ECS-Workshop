@@ -1,18 +1,10 @@
 """Tests for ECS manager utilities."""
 
-from unittest.mock import MagicMock
-
 import pytest
 from botocore.exceptions import ClientError
 
 from src.app.models import ServiceConfig
 from src.utils.ecs_manager import ECSManager
-
-
-@pytest.fixture
-def mock_session():
-    session = MagicMock()
-    return session
 
 
 @pytest.fixture
